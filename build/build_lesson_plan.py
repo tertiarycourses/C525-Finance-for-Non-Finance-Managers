@@ -17,7 +17,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TITLE = "Finance for Non-Finance Managers"
 CODE = "C525"
-VERSION = "1.0"
+VERSION = "1.1"
 EFFECTIVE = "21 September 2026"
 TRAINER = "Dr Alfred Ang"
 
@@ -91,9 +91,13 @@ doc = Document()
 prodoc.style_headings(doc)
 prodoc.add_cover_page(doc, "LESSON PLAN", TITLE, VERSION, course_code=CODE)
 prodoc.add_version_control(doc, [
-    (VERSION, EFFECTIVE,
+    ("1.0", EFFECTIVE,
      "Initial release of the non-WSQ lesson plan. Topics follow the parent course 1:1; "
      "schedule retimed to 9:30 am - 5:30 pm at 7.5 instructional hours per day.",
+     TRAINER),
+    ("1.1", EFFECTIVE,
+     "Aligned to the rebuilt v10 slide deck: activity durations and slide references "
+     "updated; hands-on items are referred to as Activities throughout.",
      TRAINER),
 ])
 prodoc.add_toc(doc)
