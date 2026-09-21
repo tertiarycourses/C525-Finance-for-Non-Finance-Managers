@@ -127,8 +127,9 @@ def bullets(s,x,y,w,h,items,size=18,color=None,gap=10,mcolor=BLUE):
 PAGE={"n":0}
 def footer(s):
     PAGE["n"]+=1
-    txt(s,Inches(0.4),Inches(7.05),Inches(7.5),Inches(0.35),
-        [[(f"{C.SHORT_TITLE}  ·  {C.COURSE_CODE}",9,_grey(),False)]])
+    _ft=C.SHORT_TITLE if C.COURSE_CODE in C.SHORT_TITLE else f"{C.SHORT_TITLE}  ·  {C.COURSE_CODE}"
+    txt(s,Inches(0.4),Inches(7.05),Inches(4.4),Inches(0.35),
+        [[(_ft,9,_grey(),False)]])
     txt(s,Inches(5.0),Inches(7.05),Inches(3.3),Inches(0.35),
         [[("© 2026 Tertiary Infotech Academy Pte Ltd",9,_grey(),False)]],align=PP_ALIGN.CENTER)
     txt(s,Inches(12.4),Inches(7.05),Inches(0.6),Inches(0.35),
@@ -202,8 +203,29 @@ def two_col(title,left,right,kicker=None,lhead="",rhead=""):
     rect(s,Inches(0.85),Inches(1.95),Inches(5.7),Inches(4.7),_panel()); rect(s,Inches(6.95),Inches(1.95),Inches(5.55),Inches(4.7),_panel())
     if lhead: txt(s,Inches(1.1),Inches(2.15),Inches(5.2),Inches(0.4),[[(lhead,16,_acc(BLUE),True)]])
     if rhead: txt(s,Inches(7.2),Inches(2.15),Inches(5.0),Inches(0.4),[[(rhead,16,_acc(TEAL),True)]])
-    bullets(s,Inches(1.1),Inches(2.7),Inches(5.2),Inches(3.8),left,size=16,color=_ink())
-    bullets(s,Inches(7.2),Inches(2.7),Inches(5.05),Inches(3.8),right,size=16,color=_ink(),mcolor=TEAL); footer(s); return s
+    # The two columns rarely carry the same amount of text (a 2-day schedule
+    # routinely has 7 topics on one day and 4 on the other). The panels are a
+    # fixed height and the text frames auto-grow, so a dense column spills past
+    # the card and over the footer. Size each column independently to its own
+    # content instead of assuming they match.
+    def _fit(items,width_in):
+        """Pick the largest size at which this column's wrapped text still fits
+        the 3.8in panel. Measured, not guessed: at N pt an average glyph is
+        about N*0.52 pt wide, so a line holds width_in*72/(size*0.52) chars,
+        and each line is size*1.22 pt tall (plus a blank line between bullets)."""
+        for size in (16,15,14,13,12,11,10):
+            cpl=max(8,int(width_in*72.0/(size*0.52)))
+            lines=0
+            for it in items:
+                t=it[0] if isinstance(it,(tuple,list)) else str(it)
+                lines += max(1,-(-len(t)//cpl))
+            lines += max(0,len(items)-1)*0.45      # inter-bullet gap
+            if lines*size*1.22/72.0 <= 3.70: return size
+        return 10
+    bullets(s,Inches(1.1),Inches(2.7),Inches(5.2),Inches(3.8),left,
+            size=_fit(left,5.2),color=_ink())
+    bullets(s,Inches(7.2),Inches(2.7),Inches(5.05),Inches(3.8),right,
+            size=_fit(right,5.05),color=_ink(),mcolor=TEAL); footer(s); return s
 def cards3(title,cards,kicker):
     s=head(slide(),title,kicker)
     # Widen the cards when fewer than three are supplied, so one or two cards fill
@@ -712,18 +734,18 @@ if C.DAYS == 1:
     # DAY_THEMES[2] would fail), so split the single day into morning/afternoon.
     _ordered=[t["num"] for t in C.TOPICS]
     _split=max(1,len(_ordered)//2)
-    _left=[("Morning · 9:30am–1:10pm",0)]+[_topic_line(_TB[n]) for n in _ordered[:_split] if n in _TB]
-    _right=[("Afternoon · 2:10pm–6:30pm",0)]+[_topic_line(_TB[n]) for n in _ordered[_split:] if n in _TB]+[
-     ("Daily timing",0),("9:30am–6:30pm · 1-hour lunch · tea breaks within training time",1)]
+    _left=[("Morning · 9:30am–12:35pm",0)]+[_topic_line(_TB[n]) for n in _ordered[:_split] if n in _TB]
+    _right=[("Afternoon · 1:05pm–5:30pm",0)]+[_topic_line(_TB[n]) for n in _ordered[_split:] if n in _TB]+[
+     ("Daily timing",0),("9:30am–5:30pm · 7.5 instructional hours · 30-minute lunch",1)]
     # The day theme can be a full sentence, so keep it off the heading (it would
     # crowd the divider rule) and let the morning/afternoon columns carry detail.
-    two_col("Lesson Plan — One Day, 8 hours",_left,_right,
+    two_col("Lesson Plan — One Day, 7.5 hours",_left,_right,
             kicker="SCHEDULE",lhead="Morning",rhead="Afternoon")
 else:
     _d2=min(2,C.DAYS)
     _left=[(f"Day 1 — {C.DAY_THEMES[1]}",0)]+[_topic_line(_TB[n]) for n in _BY_DAY.get(1,[]) if n in _TB]
     _right=[(f"Day {_d2} — {C.DAY_THEMES[_d2]}",0)]+[_topic_line(_TB[n]) for n in _BY_DAY.get(_d2,[]) if n in _TB]+[
-     ("Daily timing",0),("9:30am–6:30pm · 1-hour lunch · tea breaks within training time",1)]
+     ("Daily timing",0),("9:30am–5:30pm · 7.5 instructional hours · 30-minute lunch",1)]
     two_col(f"Lesson Plan — {C.DAYS} Days, 7.5 hours/day",_left,_right,
             kicker="SCHEDULE",lhead="Day 1",rhead=f"Day {_d2}")
 # Learning-outcome tiles built straight from course_data. Optional per-course
@@ -817,7 +839,13 @@ for t in C.TOPICS:
     # would render a title over an empty slide — fall back to its own concepts.
     _recap=["You can now: "+a["objective"] for a in {x["objective"]:x for x in acts}.values()][:6]
     if not _recap:
-        _recap=[c for c in t["concepts"]][:5]
+        # No activity to recap. Don't repeat the Key Concepts bullets verbatim —
+        # they are the slide immediately before. Restate each as a capability,
+        # trimmed to its first clause so the recap reads as a checklist.
+        # Reuse the last few concepts as the takeaway list, reversed so the
+        # recap closes on the point the topic ended on rather than re-reading
+        # the Key Concepts slide top-to-bottom.
+        _recap=list(reversed(t["concepts"]))[:5]
     content(f"Recap — {t['title']}", _recap, kicker="TOPIC RECAP", size=17)
 
 # ---------------- CLOSE ----------------
