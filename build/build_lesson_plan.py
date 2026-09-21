@@ -199,6 +199,6 @@ for r_ in ["A laptop with Microsoft Excel (or a compatible spreadsheet applicati
 
 prodoc.add_page_numbers(doc)
 prodoc.enable_update_fields(doc)
-OUT = os.path.join(REPO, "courseware", f"Lesson Plan - {TITLE}.docx")
+OUT = os.path.join(REPO, "courseware", f"LP-{TITLE} ({CODE}) v{VERSION}.docx")
 doc.save(OUT)
 print("Saved", OUT)
